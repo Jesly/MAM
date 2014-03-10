@@ -1,0 +1,20 @@
+#include <avr/io.h>
+#define PWM8_mask (1 << PD6) // mask to configure and control PD6 pin
+  void delay_loop(void);
+  int main(void) {
+  bool led_value = false;
+  DDRD |= PWM8_mask; // configure PD6 pin as output
+while(1) {
+  if (led_value)
+  PORTD |= PWM8_mask;
+  else
+  PORTD &= ~PWM8_mask;
+  led_value = !led_value;
+  delay_loop();
+}
+  return 0;
+}
+  void delay_loop(void) {
+    volatile long int counter = 0;
+    while (counter < 38094) counter++;
+  }
