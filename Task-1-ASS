@@ -1,0 +1,32 @@
+;.INCLUDE "m168def.inc"
+.ORG 0x0000
+jmp Main ; Reset Handler
+Main:
+; Stack pointer init:
+ldi r16,high(RAMEND)
+out SPH,r16 ;Set Stack Pointer to top of RAM
+ldi r16,low(RAMEND)
+out SPL,r16
+LDI R16, $40 ; Stack pointer init:
+OUT DDRD, R16
+blink:
+CBI PORTD, 6
+CALL Delay_loop
+SBI PORTD, 6
+CALL Delay_loop
+JMP blink
+Delay_loop:
+CLR R0
+CLR R24
+CLR R25
+CLR R26
+LDI R18, 0xE8
+LDI R19, 0x01
+JMP cond
+loop: ADIW R24, 0x01
+ADC R26, R0
+cond: CPI R24, 0x3C
+CPC R25, R18
+CPC R26, R19
+BRCS look
+RET
