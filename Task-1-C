@@ -1,28 +1,33 @@
-#include <asf.h>
 #include <avr/io.h>
 
 void delay_loop(void);
 
 int main (void)
 {
-	board_init();
-	/*initialise outputs */
-    DDRB = 254;
-	DDRC |= 0b00010000;
-	
-	
-	while(1) {
-		PORTB = 0b11111101;
-		for(int i=1; i<7; i++)
-		PORTB = (PORTB << 1)+1;
-		delay_loop();
-	}
-	return 0;
+
+/*initialise outputs */
+    DDRB = 0b11111110;
+	PORTB = 254;
+	DDRC = 0b00011000;
+	PORTC = 0b00001000;
+
+
+
+while(1) {
+PORTB = 0b11111101;
+for(int i=1; i<7; i++){
+delay_loop();
+PORTB = (PORTB << 1)+1;
+}
+}
+
+
+return 0;
 }
 
 
 
 void delay_loop(void) {
-	volatile long int counter = 0;
-	while (counter < 38094) counter++;
+volatile long int counter = 0;
+while (counter < 25000) counter++;
 }
