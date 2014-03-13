@@ -1,20 +1,28 @@
+#include <asf.h>
 #include <avr/io.h>
-#define PWM8_mask (1 << PD6) // mask to configure and control PD6 pin
-  void delay_loop(void);
-  int main(void) {
-  bool led_value = false;
-  DDRD |= PWM8_mask; // configure PD6 pin as output
-while(1) {
-  if (led_value)
-  PORTD |= PWM8_mask;
-  else
-  PORTD &= ~PWM8_mask;
-  led_value = !led_value;
-  delay_loop();
+
+void delay_loop(void);
+
+int main (void)
+{
+	board_init();
+	/*initialise outputs */
+    DDRB = 254;
+	DDRC |= 0b00010000;
+	
+	
+	while(1) {
+		PORTB = 0b11111101;
+		for(int i=1; i<7; i++)
+		PORTB = (PORTB << 1)+1;
+		delay_loop();
+	}
+	return 0;
 }
-  return 0;
+
+
+
+void delay_loop(void) {
+	volatile long int counter = 0;
+	while (counter < 38094) counter++;
 }
-  void delay_loop(void) {
-    volatile long int counter = 0;
-    while (counter < 38094) counter++;
-  }
