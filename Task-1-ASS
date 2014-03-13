@@ -1,32 +1,35 @@
 ;normally we use the complete definition from the definition file:
-;	.INCLUDE "m168def.inc"
+ .INCLUDE "m168def.inc"
 
-	.equ LED = 6	;bit of the output port C with LED
-	.equ S1 = 4		;bit of the input port D with Switch1
-	.equ SEG = 5
+.equ LED = 6 ;bit of the output port C with LED
+.equ S1 = 4 ;bit of the input port D with Switch1
+.equ SEG = 5
 
 
-	
+
 ; Initialization
-	EOR R0, R0
-	OUT DDRC, R0
-	OUT DDRB, R0
-	OUT PORTB, R0
-	OUT PORTC, R0
-	
-	sbi DDRC, 4
-	sbi DDRC, 5
-	
-	ldi R16, 254
-	out DDRB, R16
-	;sbi DDRB, LED	;Set Bit Immediately - LED pin is output
-;	cbi PORTD, LED	;LED ON (LED is ON when log. 0 on this bit) - not necessary, log. 0 from AVR initialization
-	;sbi DDRC, 5
-	
+EOR R0, R0
+OUT DDRC, R0
+OUT DDRB, R0
+OUT PORTB, R0
+OUT PORTC, R0
+
+sbi DDRC, 4
+sbi DDRC, 5
+
+ldi R16, 254
+out DDRB, R16
+cbi PORTC, 4 ;cbi = ON display
+sbi PORTC, 5 ;sbi = OFF display
+
+;sbi DDRB, LED ;Set Bit Immediately - LED pin is output
+; cbi PORTD, LED ;LED ON (LED is ON when log. 0 on this bit) - not necessary, log. 0 from AVR initialization
+;sbi DDRC, 5
 
 
-;	cbi DDRC, S1	;Clear Bit Imm. - not necessary, log. 0 from AVR initialization
-	;sbi PORTC, S1	;pull-up resistor on the switch input
+
+; cbi DDRC, S1 ;Clear Bit Imm. - not necessary, log. 0 from AVR initialization
+;sbi PORTC, S1 ;pull-up resistor on the switch input
 
 ;
 ; Main program start
@@ -36,46 +39,45 @@
 ;
 ; modification:
 ; when S1 pressed then LED continuously ON until S1 released
-;    (uncomment the first two lines)
+; (uncomment the first two lines)
 ;
 ; To do: when S2 pressed then LED continuously OFF until S2 released
 ;
 
 
-	
-Main: 
-	cbi PORTC, 4 ;cbi = ON display
-	sbi PORTC, 5  ;sbi = OFF display
+
+Main:
 
 
-	ldi R17,0b11111101 ;start condition
-	ldi R18,0b10000000 ;condition for 7th segment
-	ldi R20,0b00000001 ;unused PIN number
-	
-	blick:
-	out PORTB,R17 ;sending settings to display
-	Call Delay_06s    
-	lsl R17       ;Logical Shift Left, nezapomenout ze 1. bit je nyni 0, potrebujeme 1
-	;sbi R17, 1	
-	add R17, R20	;OFF to unused PIN
-	;inc R17       ;increment; Rd <- Rd+1
-	mov R19,R17	; save actual set
-	and R19,R18   ;condition test; Logical AND; Rd <- Rd&&Rr
-	breq PC+3     ;Branch if Equal; skip to Main
-	rjmp blick
-	rjmp Main	;loop to start
+
+ldi R17,0b11111101 ;start condition
+ldi R18,0b10000000 ;condition for 7th segment
+ldi R20,0b00000001 ;unused PIN number
+
+blick:
+out PORTB,R17 ;sending settings to display
+Call Delay_06s
+lsl R17 ;Logical Shift Left, nezapomenout ze 1. bit je nyni 0, potrebujeme 1
+;sbi R17, 1
+add R17, R20 ;OFF to unused PIN
+;inc R17 ;increment; Rd <- Rd+1
+mov R19,R17 ; save actual set
+and R19,R18 ;condition test; Logical AND; Rd <- Rd&&Rr
+breq PC+2 ;Branch if Equal; skip to Main
+rjmp blick
+rjmp Main ;loop to start
 
 ; Delay loop cca 0,6 s for 1 MHz AVR clock:
 ;
 ; based on incrementing/decrementing of the register until 0
 ;
 Delay_06s:
-	ldi R16, 3	;prepare for 3 loops of 256x256 loops (1 Clk)
+ldi R16, 3 ;prepare for 3 loops of 256x256 loops (1 Clk)
 Delay:
-  	inc R1		;256 incrementing of R1 (1 Clk)
-	brne Delay	;Branch if Not Equal - until 0, then go to R2 (1/2 Clk)
-	inc R2		;repeat it 256x (1 Clk)
-	brne Delay	; (1/2 Clk)
-	dec R16		;and that all do 3x (1 Clk)
-	brne Delay	; (1/2 Clk)
-	ret			;return after 3+4+(256*256*3+256*3+3)*3-256*3-3 Clk pulses. Why?
+   inc R1 ;256 incrementing of R1 (1 Clk)
+brne Delay ;Branch if Not Equal - until 0, then go to R2 (1/2 Clk)
+inc R2 ;repeat it 256x (1 Clk)
+brne Delay ; (1/2 Clk)
+dec R16 ;and that all do 3x (1 Clk)
+brne Delay ; (1/2 Clk)
+ret ;return after 3+4+(256*256*3+256*3+3)*3-256*3-3 Clk pulses. Why?
