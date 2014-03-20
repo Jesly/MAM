@@ -1,0 +1,34 @@
+pcode: ; label, which defines an address in the program memory
+.DB 0x01, 0x02, 0x03, 0x04, 0x05, 0x06
+.DB 0x07, 0x08, 0x09, 0x0A
+; program memory is word-aligned (16-bits), however, the LPM instruction
+; use byte addressing - we need table address in bytes:
+.EQU adr_pcode = 2*pcode
+.DB 0x01, 0x02, 0x03, 0x04, 0x05, 0x06
+.DB 0x07, 0x08, 0x09, 0x0A
+
+.DSEG
+code: .BYTE tab_size ; reserve space in data memory for our table
+.CSEG
+ldi ZL, LOW(adr_pcode) ; ZL - lower part of the Z register
+ldi ZH, HIGH(adr_pcode) ; ZH - upper part of the Z register
+ldi XL, LOW(code) ; XL, XH - LSB and MSB of the X register
+ldi XH, HIGH(code) ; LOW extracts LSB of 16-bit value, HIGH extracts MSB
+ldi R16, tab_size ; loop counter
+copy:
+LPM R17, Z+ ; load value from program memory
+ST X+, R17 ; store the value in the data memory
+DEC R16 ; update loop counter
+BRGE copy ; repeat while R16 >= 0
+
+.DEF key = R20 ; R20 will be referenced as key variable
+.DEF tmp = R2 ; R2 will be referenced as a temporary register
+LDI key, 5 ; just initialize key index on some value
+clr R0 ; this register will hold 0 value
+ldi YL, LOW(code) ; initialize pointer to the code array
+ldi YH, HIGH(code)
+add YL, key ; calculate the address of the item in the code array
+adc YH, R0 ; add carry to the MSB
+ld tmp, Y ; load value from code array
+lsl tmp ; shift value one bit left
+out PORTB, tmp ; write it to the PORTB
