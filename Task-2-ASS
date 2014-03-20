@@ -1,11 +1,30 @@
-pcode: ; label, which defines an address in the program memory
-.DB 0x01, 0x02, 0x03, 0x04, 0x05, 0x06
-.DB 0x07, 0x08, 0x09, 0x0A
+	.INCLUDE "m168def.inc"
+
+	
+pcode: 
+.DB 0b10000001, 0b11110011
 ; program memory is word-aligned (16-bits), however, the LPM instruction
 ; use byte addressing - we need table address in bytes:
 .EQU adr_pcode = 2*pcode
-.DB 0x01, 0x02, 0x03, 0x04, 0x05, 0x06
-.DB 0x07, 0x08, 0x09, 0x0A
+
+	.equ tab_size = 1
+EOR R0, R0
+OUT DDRC, R0
+OUT DDRB, R0
+OUT PORTB, R0
+OUT PORTC, R0
+
+sbi DDRC, 4
+sbi DDRC, 5
+
+ldi R16, 254
+out DDRB, R16
+out PORTB, R16
+cbi PORTC, 4 ;cbi = ON display
+sbi PORTC, 5 ;sbi = OFF display
+
+
+
 
 .DSEG
 code: .BYTE tab_size ; reserve space in data memory for our table
@@ -21,14 +40,38 @@ ST X+, R17 ; store the value in the data memory
 DEC R16 ; update loop counter
 BRGE copy ; repeat while R16 >= 0
 
+	
 .DEF key = R20 ; R20 will be referenced as key variable
 .DEF tmp = R2 ; R2 will be referenced as a temporary register
-LDI key, 5 ; just initialize key index on some value
+loop1:
+LDI key, 0 ; just initialize key index on some value
+loop:
 clr R0 ; this register will hold 0 value
 ldi YL, LOW(code) ; initialize pointer to the code array
 ldi YH, HIGH(code)
 add YL, key ; calculate the address of the item in the code array
 adc YH, R0 ; add carry to the MSB
 ld tmp, Y ; load value from code array
-lsl tmp ; shift value one bit left
+;lsl tmp ; shift value one bit left
 out PORTB, tmp ; write it to the PORTB
+inc key
+brne tab_size
+;rcall Delay_06s
+rjmp loop
+rjmp loop1
+
+
+; Delay loop cca 0,6 s for 1 MHz AVR clock:
+;
+; based on incrementing/decrementing of the register until 0
+;
+Delay_06s:
+	ldi R16, 3	;prepare for 3 loops of 256x256 loops (1 Clk)
+Delay:
+  	inc R1		;256 incrementing of R1 (1 Clk)
+	brne Delay	;Branch if Not Equal - until 0, then go to R2 (1/2 Clk)
+	inc R2		;repeat it 256x (1 Clk)
+	brne Delay	; (1/2 Clk)
+	dec R16		;and that all do 3x (1 Clk)
+	brne Delay	; (1/2 Clk)
+	ret
