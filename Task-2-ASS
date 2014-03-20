@@ -2,12 +2,13 @@
 
 	
 pcode: 
-.DB 0b10000001, 0b11110011
+.DB 0x81, 0xF3, 0x49, 0x61, 0x33, 0x25
+.DB 0x05, 0xF1, 0x01, 0x21
 ; program memory is word-aligned (16-bits), however, the LPM instruction
 ; use byte addressing - we need table address in bytes:
 .EQU adr_pcode = 2*pcode
 
-	.equ tab_size = 1
+	.equ tab_size = 10
 EOR R0, R0
 OUT DDRC, R0
 OUT DDRB, R0
@@ -43,8 +44,10 @@ BRGE copy ; repeat while R16 >= 0
 	
 .DEF key = R20 ; R20 will be referenced as key variable
 .DEF tmp = R2 ; R2 will be referenced as a temporary register
-loop1:
 LDI key, 0 ; just initialize key index on some value
+ldi R18, tab_size
+loop1:
+LDI key, 0
 loop:
 clr R0 ; this register will hold 0 value
 ldi YL, LOW(code) ; initialize pointer to the code array
@@ -54,11 +57,12 @@ adc YH, R0 ; add carry to the MSB
 ld tmp, Y ; load value from code array
 ;lsl tmp ; shift value one bit left
 out PORTB, tmp ; write it to the PORTB
+rcall Delay_06s
 inc key
-brne tab_size
-;rcall Delay_06s
+CPSE key,R18
 rjmp loop
 rjmp loop1
+
 
 
 ; Delay loop cca 0,6 s for 1 MHz AVR clock:
