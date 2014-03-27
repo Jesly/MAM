@@ -69,8 +69,8 @@ sbi PORTC, 3
 
 
 isr1:
-	;rcall KEYPRESS
-	;rcall DISPLAY
+	rcall KEYPRESS
+	rcall DISPLAY
 	reti ; return from Interrupt
 	
 	KEYPRESS:
@@ -96,6 +96,10 @@ KEY7:
 	rjmp	KEYRET
 	
 KEY2:   
+	sbi 	DDRD, 3	;output with log. 0 to the row with numbers 2,5,8	
+	cbi 	DDRD, 2	;high impedance on rows with numbers other than 2,5,8	
+	cbi 	DDRD, 4
+	cbi 	DDRD, 5
 	sbic	PINC, 1
 	rjmp	KEY5
 	ldi	R16, 0x02
@@ -114,6 +118,10 @@ KEY8:
 	rjmp	KEYRET
 	
 KEY3:   
+	sbi 	DDRD, 4	;output with log. 0 to the row with numbers 3,6,9	
+	cbi 	DDRD, 2	;high impedance on rows with numbers other than 3,6,9	
+	cbi 	DDRD, 3
+	cbi 	DDRD, 5
 	sbic	PINC, 1
 	rjmp	KEY6
 	ldi	R16, 0x03
@@ -126,12 +134,16 @@ KEY6:
 	rjmp	KEYRET
 	
 KEY9:   
-	sbic	PINC, 2
+	sbic	PINC, 3
 	rjmp	KEY0
 	ldi	R16, 0x09
 	rjmp	KEYRET
 
 KEY0:   
+	sbi 	DDRD, 5	;output with log. 0 to the row with numbers 2,5,8	
+	cbi 	DDRD, 2	;high impedance on rows with numbers other than 2,5,8	
+	cbi 	DDRD, 3
+	cbi 	DDRD, 4
 	sbic	PINC, 2
 	rjmp	KEY1
 	ldi	R16, 0x00
