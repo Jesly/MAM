@@ -1,0 +1,130 @@
+#include <avr/io.h>
+#include <avr/iom168.h>
+#include <util/delay.h>
+#include <avr/interrupt.h>
+#include <avr/sleep.h>
+
+int k=0;
+
+unsigned char cislo [] = { //definice cisel
+0b10000001,
+0b11110011,
+0b01001001,
+0b01100001,
+0b00110011,
+0b00100101,
+0b00000101,
+0b11110001,
+0b00000001,
+0b00100001,
+0b01111111};
+
+void delay (int m) // cekaci smycka ms
+{
+    while(m--) // smycka dokud nebude m 0
+    {
+        _delay_ms (1);
+    }
+}
+
+
+
+ISR (PCINT1_vect)
+{
+
+delay(40); // zakmity
+
+DDRD = 0b01000100;
+PORTD &=~ (1 << PD2); // nula na radek
+
+if (!bit_is_set (PINC, 1)) // nula na PC1 - tedy nejake tlacitko na sloupci 1
+{
+        k = 1;
+}
+  
+else if (!bit_is_set (PINC, 2))
+{
+        k = 4;
+}
+  
+else if (!bit_is_set (PINC, 3))
+{
+        k = 7;
+}
+
+
+DDRD = 0b01001000;
+PORTD &=~ (1 << PD3); // nula na radek
+
+if (!bit_is_set (PINC, 1)) // nula na PC1 - tedy nejake tlacitko na sloupci 1
+{
+        k = 2;
+}
+  
+else if (!bit_is_set (PINC, 2))
+{
+        k = 5;
+}
+  
+else if (!bit_is_set (PINC, 3))
+{
+        k = 8;
+}
+
+
+DDRD = 0b01010000;
+PORTD &=~ (1 << PD4); // nula na radek
+
+if (!bit_is_set (PINC, 1)) // nula na PC1 - tedy nejake tlacitko na sloupci 1
+{
+        k = 3;
+}
+  
+else if (!bit_is_set (PINC, 2))
+{
+        k = 6;
+}
+  
+else if (!bit_is_set (PINC, 3))
+{
+          k = 9;
+}
+
+
+DDRD = 0b01100000;
+PORTD &=~ (1 << PD5); // nula na radek
+
+if (!bit_is_set (PINC, 2)) // nula na PC1 - tedy nejake tlacitko na sloupci 1
+{
+        k = 0;
+}
+
+DDRD = 0b01111100;
+PORTD = 0b00000000;
+
+PORTB = cislo [k];
+
+}
+
+int main (void){
+
+DDRB = 0b11111110; // vystup PB1 az 7
+DDRD = 0b01111100; // vystup PD2 az 5
+DDRC = 0b00110000; // vstup vystup vstup
+PORTC = 0b0011110; // pull up 1 az 3, 1 na PC4
+PORTD = 0b00000000; // PD2 az 5 radky, PD6 ledka
+PORTB = 0b11111111;
+
+PCMSK1 = 0b00001110; // PCINT 9 az 11 ...pc1 az 3
+PCICR |= (1 << PCIE1); // presuseni pri zmene na PC
+
+set_sleep_mode(SLEEP_MODE_IDLE);
+
+sei(); // povoleni preruseni
+
+
+while(1){ // nekonecna smycka
+
+//sleep_cpu();
+}
+}
