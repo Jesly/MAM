@@ -17,31 +17,25 @@
 ;====================================================================
 ; RESET and INTERRUPT VECTORS
 ;====================================================================
+.ORG 0x0000 
+	rjmp Main ; Reset Handler
 
+.ORG 0x0008 
+	rjmp isr1 ; PCINT1 Handler
       ; Reset Vector
-      rjmp  Start
+      ;rjmp  Start
 
 ;====================================================================
 ; CODE SEGMENT
 ;====================================================================
 
-Start:
-; 
-; First ASM Programm for the Evaluation Board
-;
-; Example of LED blinking program for ATmega168
-;
-; LED cathode connected to PORT D bit 6, anode to +Ucc,
-; 3 switches S1, S2, S3 connected to PORT C bit 1, 2, 3 (PC1, PC2, PC3),
-; connect JP1 to GND
-; 
 
-; microcomputer hardware definition
-; it is necessary to say the assembler something about our HW:
-
-
-;normally we use the complete definition from the definition file:
-	.INCLUDE "m168def.inc"
+Main:
+; Stack pointer init:
+	ldi r16,high(RAMEND)	;Main program start
+	out SPH,r16 	;Set Stack Pointer to top of RAM
+	ldi r16,low(RAMEND)
+	out SPL,r16
 
 	
 pcode: 
@@ -74,7 +68,77 @@ sbi PORTC, 3
 
 
 
+isr1:
+	;rcall KEYPRESS
+	;rcall DISPLAY
+	reti ; return from Interrupt
+	
+	KEYPRESS:
+KEY1:
+	sbi 	DDRD, 2	;output with log. 0 to the row with numbers 1,4,7	
+	cbi 	DDRD, 3	;high impedance on rows with numbers other than 1,4,7	
+	cbi 	DDRD, 4
+	cbi 	DDRD, 5
+	sbic	PINC, 1
+	rjmp	KEY4
+	ldi	R16, 0x01	;key number 1 pressed
+	rjmp	KEYRET	;return from keyboard subroutine
+KEY4:
+	sbic	PINC, 2
+	rjmp	KEY7
+	ldi	R16, 0x04
+	rjmp	KEYRET
+	
+KEY7:  
+	sbic	PINC, 3
+	rjmp	KEY2
+	ldi	R16, 0x07
+	rjmp	KEYRET
+	
+KEY2:   
+	sbic	PINC, 1
+	rjmp	KEY5
+	ldi	R16, 0x02
+	rjmp	KEYRET
 
+KEY5:   
+	sbic	PINC, 2
+	rjmp	KEY8
+	ldi	R16, 0x05
+	rjmp	KEYRET
+	
+KEY8:   
+	sbic	PINC, 3
+	rjmp	KEY3
+	ldi	R16, 0x08
+	rjmp	KEYRET
+	
+KEY3:   
+	sbic	PINC, 1
+	rjmp	KEY6
+	ldi	R16, 0x03
+	rjmp	KEYRET
+	
+KEY6:   
+	sbic	PINC, 2
+	rjmp	KEY9
+	ldi	R16, 0x06
+	rjmp	KEYRET
+	
+KEY9:   
+	sbic	PINC, 2
+	rjmp	KEY0
+	ldi	R16, 0x09
+	rjmp	KEYRET
+
+KEY0:   
+	sbic	PINC, 2
+	rjmp	KEY1
+	ldi	R16, 0x00
+	rjmp	KEYRET
+
+KEYRET: 
+      rjmp Main
 
 
 
