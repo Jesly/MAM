@@ -123,9 +123,9 @@ cbi DDRD, 3
 cbi DDRD, 4
 sbic PINC, 2
 rjmp Initial_set
-reti
 ldi R16, 0x00
 rjmp KEYRET
+reti
 
 Initial_set:
 ldi R16, 254 //0b01111110
@@ -138,7 +138,7 @@ rcall Delay_06s
 ret
 
 KEYRET:
-rjmp DISPLAY
+
 
 DISPLAY:
 .DEF key = R16 ; R20 will be referenced as key variable
