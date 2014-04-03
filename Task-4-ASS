@@ -1,1 +1,201 @@
-hello world
+;=============================
+;===   tislejir, vondrto8  ===
+;=== MAM - uloha 4 - 13/14 ===
+;=============================
+
+.INCLUDE "m168def.inc"
+
+;====================================================================
+; RESET and INTERRUPT VECTORS
+;====================================================================
+.ORG 0x0000
+    rjmp Start
+
+;====================================================================
+; CODE SEGMENT
+;====================================================================
+
+Start:
+
+rjmp tabinit
+
+Init:
+;=== Initialization ===
+EOR R0, R0
+OUT DDRC, R0
+OUT DDRB, R0
+OUT PORTB, R0
+OUT PORTC, R0
+
+ldi R16, 254 //0b11111110
+out DDRB, R16
+ldi R16, 255 //0b11111111
+out PORTB, R16
+
+sbi DDRC, 4
+sbi DDRC, 5
+ldi R16, 22 // 0b0010110
+out PORTC, R16
+;cbi PORTC, 4 ;cbi = ON display
+;sbi PORTC, 5 ;sbi = OFF display
+
+ldi R16, 254 //0b01111110
+out DDRD, R16 ;portD pins 1-6 set as output
+ldi R16, 64 // 0b01000000 
+out PORTD, R16 ;portD pins grounded except for pin 1
+
+   
+Main:
+
+
+KEYPRESS:
+sbi DDRD, 2 ;output with log. 0 to the row with numbers 1,4,7
+cbi DDRD, 3 ;high impedance on rows with numbers other than 1,4,7
+cbi DDRD, 4
+cbi DDRD, 5
+
+KEY1:
+sbic PINC, 1
+rjmp KEY4
+ldi R16, 0x01 ;key number 1 pressed
+rjmp KEYRET ;return from keyboard subroutine
+
+KEY4:
+sbic PINC, 2
+rjmp KEY7
+ldi R16, 0x04
+rjmp KEYRET
+
+KEY7:
+sbic PINC, 3
+rjmp KEY2
+ldi R16, 0x07
+rjmp KEYRET
+
+KEY2:
+sbi DDRD, 3 ;output with log. 0 to the row with numbers 2,5,8
+cbi DDRD, 2 ;high impedance on rows with numbers other than 2,5,8
+cbi DDRD, 4
+cbi DDRD, 5
+sbic PINC, 1
+rjmp KEY5
+ldi R16, 0x02
+rjmp KEYRET
+
+KEY5:
+sbic PINC, 2
+rjmp KEY8
+ldi R16, 0x05
+rjmp DISPLAY
+
+KEY8:
+sbic PINC, 3
+rjmp KEY3
+ldi R16, 0x08
+rjmp KEYRET
+
+KEY3:
+sbi DDRD, 4 ;output with log. 0 to the row with numbers 3,6,9
+cbi DDRD, 2 ;high impedance on rows with numbers other than 3,6,9
+cbi DDRD, 3
+cbi DDRD, 5
+sbic PINC, 1
+rjmp KEY6
+ldi R16, 0x03
+rjmp KEYRET
+
+KEY6:
+sbic PINC, 2
+rjmp KEY9
+ldi R16, 0x06
+rjmp KEYRET
+
+KEY9:
+sbic PINC, 3
+rjmp KEY0
+ldi R16, 0x09
+rjmp KEYRET
+
+KEY0:
+sbi DDRD, 5 ;output with log. 0 to the row with numbers 2,5,8
+cbi DDRD, 2 ;high impedance on rows with numbers other than 2,5,8
+cbi DDRD, 3
+cbi DDRD, 4
+sbic PINC, 2
+rjmp Initial_set
+reti
+ldi R16, 0x00
+rjmp KEYRET
+
+Initial_set:
+ldi R16, 254 //0b01111110
+out DDRD, R16
+ldi R16, 30 // 0b0011110
+out PORTC, R16
+ldi R16, 64 // 0b01000000
+out PORTD, R16
+rcall Delay_06s
+ret
+
+KEYRET:
+rjmp DISPLAY
+
+DISPLAY:
+.DEF key = R16 ; R20 will be referenced as key variable
+.DEF tmp = R2 ; R2 will be referenced as a temporary register
+clr R0 ; this register will hold 0 value
+ldi YL, LOW(code) ; initialize pointer to the code array
+ldi YH, HIGH(code)
+add YL, key ; calculate the address of the item in the code array
+adc YH, R0 ; add carry to the MSB
+ld tmp, Y ; load value from code array
+out PORTB, tmp ; write it to the PORTB
+rjmp Initial_set
+
+tabinit:
+;Stack pointer init:
+ldi r22,high(RAMEND) ;Main program start
+out SPH,r22 ;Set Stack Pointer to top of RAM
+ldi r22,low(RAMEND)
+out SPL,r22
+
+;=== Table ===
+pcode:
+.DB 0x81, 0xF3, 0x49, 0x61, 0x33, 0x25
+.DB 0x05, 0xF1, 0x01, 0x21
+; program memory is word-aligned (16-bits), however, the LPM instruction
+; use byte addressing - we need table address in bytes:
+.EQU adr_pcode = 2*pcode
+.EQU tab_size = 10
+
+.DSEG
+code: .BYTE tab_size ; reserve space in data memory for our table
+.CSEG
+ldi ZL, LOW(adr_pcode) ; ZL - lower part of the Z register
+ldi ZH, HIGH(adr_pcode) ; ZH - upper part of the Z register
+ldi XL, LOW(code) ; XL, XH - LSB and MSB of the X register
+ldi XH, HIGH(code) ; LOW extracts LSB of 16-bit value, HIGH extracts MSB
+ldi R22, tab_size ; loop counter
+copy:
+LPM R17, Z+ ; load value from program memory
+ST X+, R17 ; store the value in the data memory
+DEC R22 ; update loop counter
+BRGE copy ; repeat while R16 >= 0
+rjmp Init
+
+
+; Delay loop cca 0,6 s for 1 MHz AVR clock:
+; based on incrementing/decrementing of the register until 0
+
+Delay_06s:
+ldi R16, 1 ;prepare for 1 instead of 3 loops of 256x256 loops (1 Clk)
+Delay:
+inc R1 ;256 incrementing of R1 (1 Clk)
+brne Delay ;Branch if Not Equal - until 0, then go to R2 (1/2 Clk)
+inc R2 ;repeat it 256x (1 Clk)
+brne Delay ; (1/2 Clk)
+dec R16 ;and that all do 3x (1 Clk)
+brne Delay ; (1/2 Clk)
+ret 
+
+;====================================================================
