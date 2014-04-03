@@ -63,6 +63,7 @@ rjmp KEYRET ;return from keyboard subroutine
 KEY4:
 sbic PINC, 2
 rjmp KEY7
+rcall FAN_ON
 ldi R16, 0x04
 rjmp KEYRET
 
@@ -85,6 +86,7 @@ rjmp KEYRET
 KEY5:
 sbic PINC, 2
 rjmp KEY8
+rcall FAN_OFF
 ldi R16, 0x05
 rjmp DISPLAY
 
@@ -138,7 +140,7 @@ rcall Delay_06s
 ret
 
 KEYRET:
-
+rjmp DISPLAY
 
 DISPLAY:
 .DEF key = R16 ; R20 will be referenced as key variable
@@ -196,6 +198,37 @@ inc R2 ;repeat it 256x (1 Clk)
 brne Delay ; (1/2 Clk)
 dec R16 ;and that all do 3x (1 Clk)
 brne Delay ; (1/2 Clk)
-ret 
+rjmp Main
+
+;**********Procedures***************
+VERYSMALLWAIT:
+	LDI R20, 0xFC
+	MOV R1, R20
+	
+SMALLWAIT:
+	INC	R1
+	BRNE	SMALLWAIT
+	RET
+
+FAN_ON:
+	SBI	PORTD, 6
+	RET
+
+FAN_OFF:
+	CBI	PORTD, 6
+	RET
+
+FAN_PWM:
+	RCALL	FAN_ON
+	RCALL	VERYSMALLWAIT  ; pulse ratio controlled by number of waits
+	RCALL	VERYSMALLWAIT  ; 4:1 in this case
+	RCALL	VERYSMALLWAIT
+	RCALL	VERYSMALLWAIT
+	;RCALL	FAN_OFF
+	RCALL	VERYSMALLWAIT 
+	
+
+	RET
+
 
 ;====================================================================
