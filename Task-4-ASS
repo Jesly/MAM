@@ -4,12 +4,17 @@
 ;=============================
 
 .INCLUDE "m168def.inc"
+.EQU PWM_PULSES = 36	; value for 27.8 kHz PWM
 
 ;====================================================================
 ; RESET and INTERRUPT VECTORS
 ;====================================================================
 .ORG 0x0000
     rjmp Start
+
+;.ORG 0x0008 
+;	jmp isr1 ; PCINT1 Handler
+
 
 ;====================================================================
 ; CODE SEGMENT
@@ -41,12 +46,21 @@ out PORTC, R16
 
 ldi R16, 254 //0b01111110
 out DDRD, R16 ;portD pins 1-6 set as output
-ldi R16, 64 // 0b01000000 
+ldi R16, 0 // 0b00000000 
 out PORTD, R16 ;portD pins grounded except for pin 1
 
    
 Main:
 
+PWM_INIT:
+	ldi R17, 0b000100011	; Fast PWM Mode, out on OC0B, non Inverting
+	out TCCR0A, R17			; 
+	ldi R17, 0b00001001	; WGM2:1 (Fast PWM), CS2..0:001 (internal clock, prescale=1)
+	out TCCR0B, R17
+	ldi R17, PWM_PULSES	; load number of clock pulses for 1 PWM period
+	out OCR0A, R17   
+
+	sbi DDRD, 6	; set pin 11 as PWM output OC0B (PD6 pin)
 
 KEYPRESS:
 sbi DDRD, 2 ;output with log. 0 to the row with numbers 1,4,7
@@ -63,7 +77,6 @@ rjmp KEYRET ;return from keyboard subroutine
 KEY4:
 sbic PINC, 2
 rjmp KEY7
-rcall FAN_ON
 ldi R16, 0x04
 rjmp KEYRET
 
@@ -86,7 +99,6 @@ rjmp KEYRET
 KEY5:
 sbic PINC, 2
 rjmp KEY8
-rcall FAN_OFF
 ldi R16, 0x05
 rjmp DISPLAY
 
@@ -134,12 +146,14 @@ ldi R16, 254 //0b01111110
 out DDRD, R16
 ldi R16, 30 // 0b0011110
 out PORTC, R16
-ldi R16, 64 // 0b01000000
-out PORTD, R16
 rcall Delay_06s
 ret
 
 KEYRET:
+mov R17,R16
+lsl R17
+lsl R17
+out OCR0B, R17
 rjmp DISPLAY
 
 DISPLAY:
@@ -196,39 +210,9 @@ inc R1 ;256 incrementing of R1 (1 Clk)
 brne Delay ;Branch if Not Equal - until 0, then go to R2 (1/2 Clk)
 inc R2 ;repeat it 256x (1 Clk)
 brne Delay ; (1/2 Clk)
-dec R16 ;and that all do 3x (1 Clk)
 brne Delay ; (1/2 Clk)
 rjmp Main
 
-;**********Procedures***************
-VERYSMALLWAIT:
-	LDI R20, 0xFC
-	MOV R1, R20
-	
-SMALLWAIT:
-	INC	R1
-	BRNE	SMALLWAIT
-	RET
-
-FAN_ON:
-	SBI	PORTD, 6
-	RET
-
-FAN_OFF:
-	CBI	PORTD, 6
-	RET
-
-FAN_PWM:
-	RCALL	FAN_ON
-	RCALL	VERYSMALLWAIT  ; pulse ratio controlled by number of waits
-	RCALL	VERYSMALLWAIT  ; 4:1 in this case
-	RCALL	VERYSMALLWAIT
-	RCALL	VERYSMALLWAIT
-	;RCALL	FAN_OFF
-	RCALL	VERYSMALLWAIT 
-	
-
-	RET
 
 
 ;====================================================================
